@@ -7,9 +7,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
+	"reflect"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/rsl6/rsloyalty/models"
 )
 
@@ -140,10 +143,18 @@ func NewClient(config *Config) *Client {
 func (c *Client) doRequest(ctx context.Context, method, endpoint string, body interface{}, headers *models.RequestHeaders) (*http.Response, error) {
 	url := c.config.BaseURL + endpoint
 
+	// Extract object type and ID for logging
+	objectType, objectID := extractObjectInfo(body)
+
+	log.Printf("[REQUEST] Method: %s, Endpoint: %s, ObjectType: %s, ObjectID: %s",
+		method, endpoint, objectType, objectID)
+
 	var bodyReader io.Reader
 	if body != nil {
 		jsonBody, err := json.Marshal(body)
 		if err != nil {
+			log.Printf("[ERROR] Failed to marshal request body: %v, ObjectType: %s, ObjectID: %s",
+				err, objectType, objectID)
 			return nil, fmt.Errorf("failed to marshal request body: %w", err)
 		}
 		bodyReader = bytes.NewReader(jsonBody)
@@ -151,6 +162,8 @@ func (c *Client) doRequest(ctx context.Context, method, endpoint string, body in
 
 	req, err := http.NewRequestWithContext(ctx, method, url, bodyReader)
 	if err != nil {
+		log.Printf("[ERROR] Failed to create request: %v, ObjectType: %s, ObjectID: %s",
+			err, objectType, objectID)
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 
@@ -178,11 +191,26 @@ func (c *Client) doRequest(ctx context.Context, method, endpoint string, body in
 		}
 	}
 
-	return c.httpClient.Do(req)
+	startTime := time.Now()
+	resp, err := c.httpClient.Do(req)
+	duration := time.Since(startTime)
+
+	if err != nil {
+		log.Printf("[ERROR] Request failed: %v, ObjectType: %s, ObjectID: %s, Duration: %v",
+			err, objectType, objectID, duration)
+		return nil, err
+	}
+
+	log.Printf("[RESPONSE] Status: %d, ObjectType: %s, ObjectID: %s, Duration: %v",
+		resp.StatusCode, objectType, objectID, duration)
+
+	return resp, nil
 }
 
 // doRequestWithResponse performs HTTP request and decodes response
 func (c *Client) doRequestWithResponse(ctx context.Context, method, endpoint string, body interface{}, headers *models.RequestHeaders, response interface{}) error {
+	objectType, objectID := extractObjectInfo(body)
+
 	resp, err := c.doRequest(ctx, method, endpoint, body, headers)
 	if err != nil {
 		return err
@@ -191,17 +219,26 @@ func (c *Client) doRequestWithResponse(ctx context.Context, method, endpoint str
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		bodyBytes, _ := io.ReadAll(resp.Body)
-		return &models.APIError{
+		apiErr := &models.APIError{
 			StatusCode: resp.StatusCode,
 			Message:    fmt.Sprintf("API request failed with status %d", resp.StatusCode),
 			Details:    string(bodyBytes),
 		}
+		log.Printf("[ERROR] API request failed: Status: %d, ObjectType: %s, ObjectID: %s, Error: %s, Details: %s",
+			resp.StatusCode, objectType, objectID, apiErr.Message, apiErr.Details)
+		return apiErr
 	}
 
 	if response != nil {
 		if err := json.NewDecoder(resp.Body).Decode(response); err != nil {
+			log.Printf("[ERROR] Failed to decode response: %v, ObjectType: %s, ObjectID: %s",
+				err, objectType, objectID)
 			return fmt.Errorf("failed to decode response: %w", err)
 		}
+
+		// Log successful response with response object info
+		respType, respID := extractObjectInfo(response)
+		log.Printf("[SUCCESS] Response decoded: ObjectType: %s, ObjectID: %s", respType, respID)
 	}
 
 	return nil
@@ -209,6 +246,8 @@ func (c *Client) doRequestWithResponse(ctx context.Context, method, endpoint str
 
 // doCommand performs command request (POST without response body)
 func (c *Client) doCommand(ctx context.Context, endpoint string, body interface{}, headers *models.RequestHeaders) error {
+	objectType, objectID := extractObjectInfo(body)
+
 	resp, err := c.doRequest(ctx, http.MethodPost, endpoint, body, headers)
 	if err != nil {
 		return err
@@ -217,14 +256,73 @@ func (c *Client) doCommand(ctx context.Context, endpoint string, body interface{
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		bodyBytes, _ := io.ReadAll(resp.Body)
-		return &models.APIError{
+		apiErr := &models.APIError{
 			StatusCode: resp.StatusCode,
 			Message:    fmt.Sprintf("API command failed with status %d", resp.StatusCode),
 			Details:    string(bodyBytes),
 		}
+		log.Printf("[ERROR] API command failed: Status: %d, ObjectType: %s, ObjectID: %s, Error: %s, Details: %s",
+			resp.StatusCode, objectType, objectID, apiErr.Message, apiErr.Details)
+		return apiErr
 	}
 
+	log.Printf("[SUCCESS] Command executed: ObjectType: %s, ObjectID: %s", objectType, objectID)
 	return nil
+}
+
+// extractObjectInfo extracts object type name and ID from request/response body
+func extractObjectInfo(obj interface{}) (objectType string, objectID string) {
+	if obj == nil {
+		return "unknown", ""
+	}
+
+	// Get the type name
+	t := reflect.TypeOf(obj)
+	if t.Kind() == reflect.Ptr {
+		t = t.Elem()
+	}
+	objectType = t.Name()
+
+	// Try to extract ID field
+	v := reflect.ValueOf(obj)
+	if v.Kind() == reflect.Ptr {
+		if v.IsNil() {
+			return objectType, ""
+		}
+		v = v.Elem()
+	}
+
+	// Look for common ID fields
+	idFields := []string{"ID", "Id", "CustomerID", "LoyaltyCardID", "GiftCardID", "StoreID"}
+	for _, fieldName := range idFields {
+		if field := v.FieldByName(fieldName); field.IsValid() {
+			switch field.Kind() {
+			case reflect.String:
+				objectID = field.String()
+				return
+			case reflect.Struct:
+				// Check if it's a uuid.UUID
+				if field.Type().String() == "uuid.UUID" {
+					if id, ok := field.Interface().(uuid.UUID); ok {
+						objectID = id.String()
+						return
+					}
+				}
+			case reflect.Ptr:
+				if !field.IsNil() {
+					elem := field.Elem()
+					if elem.Type().String() == "uuid.UUID" {
+						if id, ok := elem.Interface().(uuid.UUID); ok {
+							objectID = id.String()
+							return
+						}
+					}
+				}
+			}
+		}
+	}
+
+	return objectType, objectID
 }
 
 // SetHeader sets a header that will be sent with all requests
