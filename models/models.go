@@ -1232,3 +1232,357 @@ type PosTypeListDto struct {
 	Total  int64        `json:"total"`
 	Values []PosTypeDto `json:"values"`
 }
+
+// ========== Segment Groups ==========
+
+// SegmentGroupDto represents segment group data
+type SegmentGroupDto struct {
+	ID          uuid.UUID `json:"id"`
+	Name        string    `json:"name"`
+	Description *string   `json:"description,omitempty"`
+	IsDeleted   bool      `json:"isDeleted"`
+	IsArchived  bool      `json:"isArchived"`
+}
+
+// SegmentGroupListDto represents list of segment groups
+type SegmentGroupListDto struct {
+	Total  int64             `json:"total"`
+	Values []SegmentGroupDto `json:"values"`
+}
+
+// ========== Sponsored Cards ==========
+
+// SponsoredCardStatuses represents sponsored card status
+type SponsoredCardStatuses string
+
+const (
+	SponsoredCardStatusCreated       SponsoredCardStatuses = "Created"
+	SponsoredCardStatusReadyToIssued SponsoredCardStatuses = "ReadyToIssued"
+	SponsoredCardStatusIssued        SponsoredCardStatuses = "Issued"
+	SponsoredCardStatusActive        SponsoredCardStatuses = "Active"
+	SponsoredCardStatusBlocked       SponsoredCardStatuses = "Blocked"
+	SponsoredCardStatusExpired       SponsoredCardStatuses = "Expired"
+)
+
+// CreateSponsoredCardRequest represents request for creating a sponsored card
+type CreateSponsoredCardRequest struct {
+	BaseCommand
+	SeriesID uuid.UUID `json:"seriesId"`
+}
+
+// BlockSponsoredCardRequest represents request for blocking a sponsored card
+type BlockSponsoredCardRequest struct {
+	BaseCommand
+	BlockReasonID *uuid.UUID `json:"blockReasonId,omitempty"`
+}
+
+// IssueSponsoredCardRequest represents request for issuing a sponsored card
+type IssueSponsoredCardRequest struct {
+	BaseCommand
+	OwnerID       uuid.UUID  `json:"ownerId"`
+	IssueReasonID *uuid.UUID `json:"issueReasonId,omitempty"`
+}
+
+// SponsoredCardAccrualRequest represents request for accrual to sponsored card
+type SponsoredCardAccrualRequest struct {
+	BaseCommand
+	CurrencyID     uuid.UUID  `json:"currencyId"`
+	Amount         float64    `json:"amount"`
+	ExpirationDate *time.Time `json:"expirationDate,omitempty"`
+}
+
+// SponsoredCardSubtractRequest represents request for subtract from sponsored card
+type SponsoredCardSubtractRequest struct {
+	BaseCommand
+	CurrencyID uuid.UUID `json:"currencyId"`
+	Amount     float64   `json:"amount"`
+}
+
+// SponsoredCardDto represents sponsored card data
+type SponsoredCardDto struct {
+	ID             uuid.UUID             `json:"id"`
+	Number         string                `json:"number"`
+	Barcode        *string               `json:"barcode,omitempty"`
+	SeriesID       uuid.UUID             `json:"seriesId"`
+	Status         SponsoredCardStatuses `json:"status"`
+	OwnerID        *uuid.UUID            `json:"ownerId,omitempty"`
+	IssueDate      *time.Time            `json:"issueDate,omitempty"`
+	ExpirationDate *time.Time            `json:"expirationDate,omitempty"`
+	IsDeleted      bool                  `json:"isDeleted"`
+	Groups         []uuid.UUID           `json:"groups,omitempty"`
+	Balances       []BalanceDto          `json:"balances,omitempty"`
+}
+
+// SponsoredCardListDto represents list of sponsored cards
+type SponsoredCardListDto struct {
+	Total  int64              `json:"total"`
+	Values []SponsoredCardDto `json:"values"`
+}
+
+// SponsoredCardTransactionDto represents sponsored card transaction data
+type SponsoredCardTransactionDto struct {
+	TransactionID   uuid.UUID        `json:"transactionId"`
+	OperationDate   time.Time        `json:"operationDate"`
+	TransactionType TransactionTypes `json:"transactionType"`
+	Amount          float64          `json:"amount"`
+	CurrencyID      uuid.UUID        `json:"currencyId"`
+	ExpirationDate  *time.Time       `json:"expirationDate,omitempty"`
+}
+
+// SponsoredCardTransactionListDto represents list of sponsored card transactions
+type SponsoredCardTransactionListDto struct {
+	Transactions []SponsoredCardTransactionDto `json:"transactions"`
+}
+
+// ChequeDto represents cheque data
+type ChequeDto struct {
+	ChequeID      uuid.UUID  `json:"chequeId"`
+	OperationDate time.Time  `json:"operationDate"`
+	StoreID       *uuid.UUID `json:"storeId,omitempty"`
+	PosID         *uuid.UUID `json:"posId,omitempty"`
+	TotalAmount   float64    `json:"totalAmount"`
+}
+
+// ChequeListDto represents list of cheques
+type ChequeListDto struct {
+	Cheques []ChequeDto `json:"cheques"`
+}
+
+// ========== Sponsored Card Owners ==========
+
+// CreateSponsoredCardOwnerRequest represents request for creating a sponsored card owner
+type CreateSponsoredCardOwnerRequest struct {
+	BaseCommand
+	Name string `json:"name"`
+}
+
+// SponsoredCardOwnerDto represents sponsored card owner data
+type SponsoredCardOwnerDto struct {
+	ID         uuid.UUID `json:"id"`
+	Name       string    `json:"name"`
+	IsDeleted  bool      `json:"isDeleted"`
+	IsArchived bool      `json:"isArchived"`
+}
+
+// SponsoredCardOwnerListDto represents list of sponsored card owners
+type SponsoredCardOwnerListDto struct {
+	Total  int64                   `json:"total"`
+	Values []SponsoredCardOwnerDto `json:"values"`
+}
+
+// ========== Static Segments ==========
+
+// CreateStaticSegmentRequest represents request for creating a static segment
+type CreateStaticSegmentRequest struct {
+	BaseCommand
+	Name string `json:"name"`
+}
+
+// SetStaticSegmentGroupRequest represents request for setting static segment group
+type SetStaticSegmentGroupRequest struct {
+	BaseCommand
+	GroupID *uuid.UUID `json:"groupId,omitempty"`
+}
+
+// StaticSegmentDto represents static segment data
+type StaticSegmentDto struct {
+	ID          uuid.UUID  `json:"id"`
+	Name        string     `json:"name"`
+	Description *string    `json:"description,omitempty"`
+	Color       *string    `json:"color,omitempty"`
+	GroupID     *uuid.UUID `json:"groupId,omitempty"`
+	IsDeleted   bool       `json:"isDeleted"`
+	IsArchived  bool       `json:"isArchived"`
+}
+
+// StaticSegmentListDto represents list of static segments
+type StaticSegmentListDto struct {
+	Total  int64              `json:"total"`
+	Values []StaticSegmentDto `json:"values"`
+}
+
+// ========== Stores ==========
+
+// CreateStoreRequest represents request for creating a store
+type CreateStoreRequest struct {
+	BaseCommand
+	Name string `json:"name"`
+}
+
+// SetStoreInternalNumberRequest represents request for setting store internal number
+type SetStoreInternalNumberRequest struct {
+	BaseCommand
+	InternalNumber string `json:"internalNumber"`
+}
+
+// SetStoreTimeZoneRequest represents request for setting store time zone
+type SetStoreTimeZoneRequest struct {
+	BaseCommand
+	TimeZone string `json:"timeZone"`
+}
+
+// SetStoreAddressRequest represents request for setting store address
+type SetStoreAddressRequest struct {
+	BaseCommand
+	Address string `json:"address"`
+}
+
+// CloseStoreRequest represents request for closing a store
+type CloseStoreRequest struct {
+	BaseCommand
+}
+
+// OpenStoreRequest represents request for opening a store
+type OpenStoreRequest struct {
+	BaseCommand
+}
+
+// SetStoreRetailSpaceRequest represents request for setting store retail space
+type SetStoreRetailSpaceRequest struct {
+	BaseCommand
+	RetailSpace float64 `json:"retailSpace"`
+}
+
+// SetStoreFormatRequest represents request for setting store format
+type SetStoreFormatRequest struct {
+	BaseCommand
+	FormatID *uuid.UUID `json:"formatId,omitempty"`
+}
+
+// SetStoreTerritorialDivisionRequest represents request for setting store territorial division
+type SetStoreTerritorialDivisionRequest struct {
+	BaseCommand
+	TerritorialDivisionID *uuid.UUID `json:"territorialDivisionId,omitempty"`
+}
+
+// SetStoreOpeningHoursRequest represents request for setting store opening hours
+type SetStoreOpeningHoursRequest struct {
+	BaseCommand
+	OpeningHoursID *uuid.UUID `json:"openingHoursId,omitempty"`
+}
+
+// SetStoreLocationCoordinatesRequest represents request for setting store location coordinates
+type SetStoreLocationCoordinatesRequest struct {
+	BaseCommand
+	Latitude  *float64 `json:"latitude,omitempty"`
+	Longitude *float64 `json:"longitude,omitempty"`
+}
+
+// StoreDto represents store data
+type StoreDto struct {
+	ID                    uuid.UUID         `json:"id"`
+	Name                  string            `json:"name"`
+	PublicName            *string           `json:"publicName,omitempty"`
+	InternalNumber        *string           `json:"internalNumber,omitempty"`
+	TimeZone              *string           `json:"timeZone,omitempty"`
+	Address               *string           `json:"address,omitempty"`
+	RetailSpace           *float64          `json:"retailSpace,omitempty"`
+	FormatID              *uuid.UUID        `json:"formatId,omitempty"`
+	TerritorialDivisionID *uuid.UUID        `json:"territorialDivisionId,omitempty"`
+	OpeningHoursID        *uuid.UUID        `json:"openingHoursId,omitempty"`
+	Latitude              *float64          `json:"latitude,omitempty"`
+	Longitude             *float64          `json:"longitude,omitempty"`
+	IsClosed              bool              `json:"isClosed"`
+	IsDeleted             bool              `json:"isDeleted"`
+	IsArchived            bool              `json:"isArchived"`
+	MediaContents         []MediaContentDto `json:"mediaContents,omitempty"`
+}
+
+// MediaContentDto represents media content data
+type MediaContentDto struct {
+	ID        uuid.UUID `json:"id"`
+	Name      string    `json:"name"`
+	Source    string    `json:"source"`
+	Type      string    `json:"type"`
+	IsDefault bool      `json:"isDefault"`
+}
+
+// StoreListDto represents list of stores
+type StoreListDto struct {
+	Total  int64      `json:"total"`
+	Values []StoreDto `json:"values"`
+}
+
+// ========== Store Clusters ==========
+
+// AddStoreToClusterRequest represents request for adding store to cluster
+type AddStoreToClusterRequest struct {
+	BaseCommand
+	StoreID uuid.UUID `json:"storeId"`
+}
+
+// RemoveStoreFromClusterRequest represents request for removing store from cluster
+type RemoveStoreFromClusterRequest struct {
+	BaseCommand
+	StoreID uuid.UUID `json:"storeId"`
+}
+
+// StoreClusterDto represents store cluster data
+type StoreClusterDto struct {
+	ID         uuid.UUID   `json:"id"`
+	Name       string      `json:"name"`
+	Color      *string     `json:"color,omitempty"`
+	IsDeleted  bool        `json:"isDeleted"`
+	IsArchived bool        `json:"isArchived"`
+	Stores     []uuid.UUID `json:"stores,omitempty"`
+}
+
+// StoreClusterListDto represents list of store clusters
+type StoreClusterListDto struct {
+	Total  int64             `json:"total"`
+	Values []StoreClusterDto `json:"values"`
+}
+
+// ========== Store Formats ==========
+
+// CreateStoreFormatRequest represents request for creating a store format
+type CreateStoreFormatRequest struct {
+	BaseCommand
+	Name string `json:"name"`
+}
+
+// StoreFormatDto represents store format data
+type StoreFormatDto struct {
+	ID        uuid.UUID `json:"id"`
+	Name      string    `json:"name"`
+	IsDeleted bool      `json:"isDeleted"`
+}
+
+// StoreFormatListDto represents list of store formats
+type StoreFormatListDto struct {
+	Total  int64            `json:"total"`
+	Values []StoreFormatDto `json:"values"`
+}
+
+// ========== Store Properties ==========
+
+// CreateStorePropertyRequest represents request for creating a store property
+type CreateStorePropertyRequest struct {
+	BaseCommand
+	Name string                `json:"name"`
+	Type CustomerPropertyTypes `json:"type"`
+}
+
+// ========== Territorial Divisions ==========
+
+// CreateTerritorialDivisionRequest represents request for creating a territorial division
+type CreateTerritorialDivisionRequest struct {
+	BaseCommand
+	Name     string     `json:"name"`
+	ParentID *uuid.UUID `json:"parentId,omitempty"`
+}
+
+// TerritorialDivisionDto represents territorial division data
+type TerritorialDivisionDto struct {
+	ID         uuid.UUID  `json:"id"`
+	Name       string     `json:"name"`
+	ParentID   *uuid.UUID `json:"parentId,omitempty"`
+	IsDeleted  bool       `json:"isDeleted"`
+	IsArchived bool       `json:"isArchived"`
+}
+
+// TerritorialDivisionListDto represents list of territorial divisions
+type TerritorialDivisionListDto struct {
+	Total  int64                    `json:"total"`
+	Values []TerritorialDivisionDto `json:"values"`
+}

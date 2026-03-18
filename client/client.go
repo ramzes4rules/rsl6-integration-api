@@ -61,6 +61,18 @@ type Client struct {
 	OpeningHours                *OpeningHoursService
 	Pos                         *PosService
 	PosType                     *PosTypeService
+	SegmentGroup                *SegmentGroupService
+	SponsoredCards              *SponsoredCardService
+	SponsoredCardBlockReason    *SponsoredCardBlockReasonService
+	SponsoredCardGroup          *SponsoredCardGroupService
+	SponsoredCardIssueReason    *SponsoredCardIssueReasonService
+	SponsoredCardOwner          *SponsoredCardOwnerService
+	StaticSegment               *StaticSegmentService
+	Store                       *StoreService
+	StoreCluster                *StoreClusterService
+	StoreFormat                 *StoreFormatService
+	StoreProperty               *StorePropertyService
+	TerritorialDivision         *TerritorialDivisionService
 }
 
 // NewClient creates a new RS Loyalty API client
@@ -108,6 +120,18 @@ func NewClient(config *Config) *Client {
 	c.OpeningHours = &OpeningHoursService{client: c}
 	c.Pos = &PosService{client: c}
 	c.PosType = &PosTypeService{client: c}
+	c.SegmentGroup = &SegmentGroupService{client: c}
+	c.SponsoredCards = &SponsoredCardService{client: c}
+	c.SponsoredCardBlockReason = &SponsoredCardBlockReasonService{client: c}
+	c.SponsoredCardGroup = &SponsoredCardGroupService{client: c}
+	c.SponsoredCardIssueReason = &SponsoredCardIssueReasonService{client: c}
+	c.SponsoredCardOwner = &SponsoredCardOwnerService{client: c}
+	c.StaticSegment = &StaticSegmentService{client: c}
+	c.Store = &StoreService{client: c}
+	c.StoreCluster = &StoreClusterService{client: c}
+	c.StoreFormat = &StoreFormatService{client: c}
+	c.StoreProperty = &StorePropertyService{client: c}
+	c.TerritorialDivision = &TerritorialDivisionService{client: c}
 
 	return c
 }
