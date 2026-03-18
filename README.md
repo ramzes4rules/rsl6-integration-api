@@ -14,38 +14,40 @@ go get github.com/rsl6/rsloyalty
 package main
 
 import (
-    "context"
-    "fmt"
-    "log"
+	"context"
+	"fmt"
+	"log"
+	"net/http/httptest"
+	"time"
 
-    "github.com/google/uuid"
-    "github.com/ramzes4rules/rsl6-integration-api/client"
-    "github.com/ramzes4rules/rsl6-integration-api/models"
+	"github.com/ramzes4rules/rsl6-integration-api/client"
+	"github.com/ramzes4rules/rsl6-integration-api/mock"
+	"github.com/ramzes4rules/rsl6-integration-api/models"
 )
 
 func main() {
-    // Создание клиента
-    c := client.NewClient(&client.Config{
-        BaseURL: "https://api.loyalty.example.com",
-    })
+	//Локальный mock-сервер позволяет сделать рабочий запрос без внешних зависимостей.
+	server := httptest.NewServer(mock.NewServer())
+	defer server.Close()
 
-    // Получение клиента по ID
-    customerID := uuid.MustParse("11111111-1111-1111-1111-111111111111")
-    customer, err := c.Customers.GetByID(context.Background(), customerID)
-    if err != nil {
-        log.Fatal(err)
-    }
-    fmt.Printf("Customer: %s %s\n", *customer.FirstName, *customer.LastName)
+	cfg := client.DefaultConfig()
+	cfg.BaseURL = server.URL
+	api := client.NewClient(cfg)
 
-    // Получение баланса клиента
-    balance, err := c.Customers.GetBalanceByID(context.Background(), customerID)
-    if err != nil {
-        log.Fatal(err)
-    }
-    for _, b := range balance.Balances.Balances {
-        fmt.Printf("Currency %s: %.2f\n", b.CurrencyID, b.Value)
-    }
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	result, err := api.Countries.GetList(ctx, &models.GetListRequest{})
+	if err != nil {
+		log.Fatalf("countries get_list failed: %v", err)
+	}
+
+	fmt.Printf("Countries total: %d\n", result.Total)
+	if len(result.Values) > 0 {
+		fmt.Printf("First country: id=%s code=%s\n", result.Values[0].ID, result.Values[0].Code)
+	}
 }
+
 ```
 
 ## Структура проекта
