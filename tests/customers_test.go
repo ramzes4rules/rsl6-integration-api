@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/rsl6/rsloyalty/models"
+	"github.com/ramzes4rules/rsl6-integration-api/models"
 )
 
 func TestCustomers_GetByID(t *testing.T) {

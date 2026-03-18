@@ -19,8 +19,8 @@ import (
     "log"
 
     "github.com/google/uuid"
-    "github.com/rsl6/rsloyalty/client"
-    "github.com/rsl6/rsloyalty/models"
+    "github.com/ramzes4rules/rsl6-integration-api/client"
+    "github.com/ramzes4rules/rsl6-integration-api/models"
 )
 
 func main() {
