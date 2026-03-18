@@ -15,30 +15,51 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
-	"net/http/httptest"
+	"os"
+	"strings"
 	"time"
 
 	"github.com/ramzes4rules/rsl6-integration-api/client"
-	"github.com/ramzes4rules/rsl6-integration-api/mock"
 	"github.com/ramzes4rules/rsl6-integration-api/models"
 )
 
 func main() {
-	//Локальный mock-сервер позволяет сделать рабочий запрос без внешних зависимостей.
-	server := httptest.NewServer(mock.NewServer())
-	defer server.Close()
+	baseURL := strings.TrimSpace(os.Getenv("RSL6_BASE_URL"))
+	if baseURL == "" {
+		log.Fatal("RSL6_BASE_URL is required")
+	}
+
+	token := strings.TrimSpace(os.Getenv("RSL6_BEARER_TOKEN"))
+	userID := strings.TrimSpace(os.Getenv("RSL6_USER_ID"))
 
 	cfg := client.DefaultConfig()
-	cfg.BaseURL = server.URL
+	cfg.BaseURL = baseURL
+	cfg.Timeout = 15 * time.Second
+	cfg.Headers = map[string]string{}
+
+	if token != "" {
+		cfg.Headers["Authorization"] = "Bearer " + token
+	}
+	if userID != "" {
+		cfg.Headers["user-id"] = userID
+	}
+	cfg.Headers["interaction-channel"] = "api"
+
 	api := client.NewClient(cfg)
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), cfg.Timeout)
 	defer cancel()
 
-	result, err := api.Countries.GetList(ctx, &models.GetListRequest{})
+	take := 1
+	result, err := api.Countries.GetList(ctx, &models.GetListRequest{Take: &take})
 	if err != nil {
+		var apiErr *models.APIError
+		if errors.As(err, &apiErr) {
+			log.Fatalf("countries get_list failed: status=%d message=%s details=%s", apiErr.StatusCode, apiErr.Message, apiErr.Details)
+		}
 		log.Fatalf("countries get_list failed: %v", err)
 	}
 
